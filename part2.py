@@ -1,115 +1,79 @@
-from collections import UserDict
+# Fields
 
-class Field:
-    def __init__(self, value):
-        self.value = value
+def create_name(value):
+    return value
 
-    def __str__(self):
-        return str(self.value)
+def create_phone(value):
+    if not str(value).isdigit() or len(str(value)) != 10:
+        raise ValueError("Phone number should have 10 digits.")
+    return value
 
-class Name(Field):
-    pass
+# Records
 
-class Phone(Field):
-    def __init__(self, value):
-        if len(value) == 10 and value.isdigit():
-            super().__init__(value)
-        else:
-            raise ValueError("Phone number must be 10 digits")
+def create_record(name):
+    return {"name": create_name(name), "phones": []}
 
-class Record:
-    def __init__(self, name):
-        self.name = Name(name)
-        self.phones = []
+def add_phone_to_record(record, phone):
+    record["phones"].append(create_phone(phone))
 
-    def add_phone(self, phone):
-        self.phones.append(Phone(phone))
+def remove_phone_from_record(record, phone):
+    record["phones"] = [p for p in record["phones"] if p != phone]
 
-    def remove_phone(self, phone):
-        for p in self.phones:
-            if p.value == phone:
-                self.phones.remove(p)
+def edit_phone_in_record(record, old_phone, new_phone):
+    new_phones = [create_phone(new_phone) if p == old_phone else p for p in record["phones"]]
+    record["phones"] = new_phones
 
-    def edit_phone(self, old_phone, new_phone):
-        for index, p in enumerate(self.phones):
-            if p.value == old_phone:
-                self.phones[index] = Phone(new_phone)
+def find_phone_in_record(record, phone):
+    return phone if phone in record["phones"] else None
 
-    def find_phone(self, phone):
-        for p in self.phones:
-            if p.value == phone:
-                return p.value
-        return None
+def str_record(record):
+    return f"Contact name: {record['name']}, phones: {'; '.join(record['phones'])}"
 
-    def __str__(self):
-        return f"Contact name: {self.name.value}, phones: {'; '.join(p.value for p in self.phones)}"
+# AddressBook
 
-class AddressBook(UserDict):
-    def add_record(self, record):
-        self.data[record.name.value] = record
+address_book = {}
 
-    def find(self, name):
-        return self.data.get(name, None)
+def add_record_to_book(record):
+    address_book[record["name"]] = record
 
-    def delete(self, name):
-        if name in self.data:
-            del self.data[name]
+def find_record_in_book(name):
+    return address_book.get(name)
 
-class AssistantBot:
-    def __init__(self):
-        self.book = AddressBook()
+def delete_record_from_book(name):
+    if name in address_book:
+        del address_book[name]
 
-    def hello(self):
-        return "How can I help you?"
+# Main
 
-    def add_contact(self, name, phone):
-        record = self.book.find(name)
-        if not record:
-            record = Record(name)
-            self.book.add_record(record)
-        record.add_phone(phone)
-        return f"Контакт {name} збережено з номером {phone}."
+def main():
+    john_record = create_record("John")
+    add_phone_to_record(john_record, "1234567890")
+    add_phone_to_record(john_record, "5555555555")
+    add_record_to_book(john_record)
 
-    def find_contact(self, name):
-        record = self.book.find(name)
-        return str(record) if record else f"Контакт {name} не знайдено."
+    jane_record = create_record("Jane")
+    add_phone_to_record(jane_record, "9876543210")
+    add_record_to_book(jane_record)
 
-    def update_contact(self, name, new_phone):
-        record = self.book.find(name)
-        if record:
-            # Assuming first phone number is the main one.
-            record.edit_phone(record.phones[0].value, new_phone)
-            return f"Номер {name} оновлено до {new_phone}."
-        else:
-            return f"Контакт {name} не знайдено."
+    print("All records in the address book:")
+    for name, record in address_book.items():
+        print(str_record(record))
 
-    def list_contacts(self):
-        return '\n'.join([str(record) for record in self.book.data.values()])
+    john = find_record_in_book("John")
+    edit_phone_in_record(john, "1234567890", "1112223333")
 
-    def command_handler(self, command, *args):
-        if command == "hello":
-            return self.hello()
-        elif command == "add" and len(args) == 2:
-            return self.add_contact(args[0], args[1])
-        elif command == "phone" and len(args) == 1:
-            return self.find_contact(args[0])
-        elif command == "change" and len(args) == 2:
-            return self.update_contact(args[0], args[1])
-        elif command == "all":
-            return self.list_contacts()
-        else:
-            return "Невідома команда!"
+    print("\nJohn's updated record:")
+    print(str_record(john))
 
-    def run(self):
-        print("Бот-помічник готовий до роботи!")
-        while True:
-            user_input = input("> ").strip().lower()
-            if user_input in ['exit', 'close']:
-                print("До побачення!")
-                break
-            command_parts = user_input.split()
-            print(self.command_handler(command_parts[0], *command_parts[1:]))
+    found_phone = find_phone_in_record(john, "5555555555")
+    print(f"\n{john['name']}'s found phone: {found_phone}")
+
+    delete_record_from_book("Jane")
+    print("\nAll records in the address book after deleting Jane:")
+    for name, record in address_book.items():
+        print(str_record(record))
 
 if __name__ == "__main__":
-    bot = AssistantBot()
-    bot.run()
+    main()
+
+
